@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Company Risk Assessment · Tunic Pay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0f;
+      --bg-card: #111418;
+      --bg-elevated: #181c22;
+      --border: #1e2530;
+      --border-bright: #2a3444;
+      --text-primary: #e8edf5;
+      --text-secondary: #8896a8;
+      --text-muted: #4a5668;
+      --accent: #3b82f6;
+      --accent-dim: rgba(59,130,246,0.15);
+      --risk-low: #22c55e;       --risk-low-dim: rgba(34,197,94,0.1);
+      --risk-medium: #f59e0b;    --risk-medium-dim: rgba(245,158,11,0.1);
+      --risk-high: #ef4444;      --risk-high-dim: rgba(239,68,68,0.1);
+      --risk-unknown: #6b7280;   --risk-unknown-dim: rgba(107,114,128,0.1);
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius: 6px; --radius-lg: 10px;
+    }
+
+    html, body {
+      min-height: 100vh; background: var(--bg); color: var(--text-primary);
+      font-family: var(--font-display); font-size: 14px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { max-width: 860px; margin: 0 auto; padding: 48px 20px 80px; }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 40px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text-secondary); margin-bottom: 16px;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--risk-low); }
+    h1 {
+      font-size: clamp(24px, 4vw, 36px); font-weight: 700;
+      letter-spacing: -.02em; line-height: 1.2; color: var(--text-primary);
+    }
+    .subtitle { margin-top: 10px; color: var(--text-secondary); font-size: 14px; max-width: 460px; margin-inline: auto; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px;
+    }
+
+    /* ── Search form ── */
+    .form-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; margin-bottom: 16px; }
+    .form-or { display: flex; align-items: flex-end; padding-bottom: 10px; color: var(--text-muted); font-family: var(--font-mono); font-size: 12px; }
+    label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; }
+    input, select {
+      width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 12px; color: var(--text-primary);
+      font-size: 13px; font-family: inherit; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--text-muted); }
+    .field { position: relative; }
+
+    /* ── Disambiguation dropdown ── */
+    .dropdown {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+      background: var(--bg-elevated); border: 1px solid var(--border-bright);
+      border-radius: var(--radius); margin-top: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.4); max-height: 280px; overflow-y: auto;
+      display: none;
+    }
+    .dropdown.open { display: block; }
+    .dropdown-hint {
+      padding: 6px 12px; font-size: 11px; color: var(--text-muted);
+      font-family: var(--font-mono); border-bottom: 1px solid var(--border);
+    }
+    .dropdown-item {
+      padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+    }
+    .dropdown-item:hover { background: var(--accent-dim); }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-name { font-weight: 600; font-size: 13px; }
+    .dropdown-meta { font-size: 11px; font-family: var(--font-mono); color: var(--text-secondary); margin-top: 2px; }
+
+    /* ── Form actions ── */
+    .form-actions { display: flex; gap: 10px; align-items: flex-end; }
+    .jurisdiction-field { min-width: 200px; }
+    .btn {
+      padding: 9px 20px; border: none; border-radius: var(--radius);
+      font-family: var(--font-display); font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border-bright); color: var(--text-secondary); }
+
+    /* ── Collection status line (replaces fancy progress rows) ── */
+    .status-line {
+      font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);
+      padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .status-line span + span::before { content: ' · '; color: var(--text-muted); }
+    .s-running { color: var(--accent); }
+    .s-done    { color: var(--risk-low); }
+    .s-error   { color: var(--risk-high); }
+
+    /* ── Risk profile card ── */
+    .risk-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+    .risk-badge {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 72px; height: 72px; border-radius: var(--radius); flex-shrink: 0;
+      font-weight: 700; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; gap: 4px;
+    }
+    .risk-badge-icon { font-size: 20px; }
+    .risk-title-group { flex: 1; }
+    .risk-company-name { font-size: 18px; font-weight: 700; }
+    .risk-meta { font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); margin-top: 4px; }
+    .risk-summary { margin-top: 6px; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+    /* Completeness — plain text, no bar */
+    .completeness-text {
+      font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Sections */
+    .section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--text-muted); margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .kv-pair { display: flex; flex-direction: column; gap: 2px; }
+    .kv-key { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+    .kv-val { font-size: 13px; color: var(--text-primary); }
+    .kv-null { color: var(--text-muted); font-style: italic; }
+
+    /* Directors */
+    .director-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .director-item {
+      padding: 10px 12px; background: var(--bg-elevated);
+      border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .director-name { font-size: 13px; font-weight: 600; }
+    .director-meta { font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); margin-top: 2px; }
+
+    /* Risk signals */
+    .signals { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .signal-item {
+      padding: 10px 14px; border-radius: var(--radius);
+      border-left: 3px solid; display: flex; flex-direction: column; gap: 2px;
+    }
+    .signal-high   { background: var(--risk-high-dim);    border-color: var(--risk-high); }
+    .signal-medium { background: var(--risk-medium-dim);  border-color: var(--risk-medium); }
+    .signal-low    { background: var(--risk-low-dim);     border-color: var(--risk-low); }
+    .signal-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .signal-high   .signal-name { color: var(--risk-high); }
+    .signal-medium .signal-name { color: var(--risk-medium); }
+    .signal-low    .signal-name { color: var(--risk-low); }
+    .signal-detail { font-size: 12px; color: var(--text-secondary); }
+
+    /* Adverse media */
+    .media-summary {
+      font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+      padding: 12px; background: var(--bg-elevated);
+      border-radius: var(--radius); border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* Error */
+    .error-box {
+      padding: 12px 16px; border-radius: var(--radius);
+      background: var(--risk-high-dim); border: 1px solid var(--risk-high);
+      color: var(--risk-high); font-size: 13px;
+    }
+
+    /* Footer */
+    .footer { margin-top: 48px; text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+    .status-pill {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 4px; font-size: 11px;
+      font-family: var(--font-mono);
+    }
+    .pill-active   { background: var(--risk-low-dim);    color: var(--risk-low); }
+    .pill-dissolved{ background: var(--risk-high-dim);   color: var(--risk-high); }
+    .pill-other    { background: var(--border);          color: var(--text-secondary); }
+
+    .tag {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      font-size: 11px; font-family: var(--font-mono); color: var(--text-secondary); margin: 2px;
+    }
+
+    select option { background: var(--bg-elevated); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="badge"><span class="badge-dot"></span> Tunic Pay · Risk Intelligence</div>
+    <h1>Company Risk Assessment</h1>
+    <p class="subtitle">Surface risk signals for payment beneficiaries using real-time data and AI analysis.</p>
+  </header>
+
+  <!-- Search form -->
+  <div class="card" id="search-card">
+    <div class="form-grid">
+      <div class="field">
+        <label for="company-name">Company Name</label>
+        <input id="company-name" type="text" placeholder="e.g. Cartoon Network Ltd" autocomplete="off" />
+        <div class="dropdown" id="dropdown"></div>
+      </div>
+      <div class="form-or">or</div>
+      <div>
+        <label for="reg-number">Registration Number</label>
+        <input id="reg-number" type="text" placeholder="e.g. 12345678" style="font-family: var(--font-mono)" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <div class="jurisdiction-field">
+        <label for="jurisdiction">Jurisdiction</label>
+        <select id="jurisdiction">
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="US">🇺🇸 United States</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="FR">🇫🇷 France</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="assess-btn" disabled>Assess Risk</button>
+      <button class="btn btn-secondary" id="reset-btn" style="display:none">Reset</button>
+    </div>
+  </div>
+
+  <!-- Single status line (replaces collector progress rows) -->
+  <div id="status-line" class="status-line" style="display:none"></div>
+
+  <!-- Error -->
+  <div id="error-box" class="error-box" style="display:none"></div>
+
+  <!-- Profile result -->
+  <div id="profile-section" style="display:none" class="card"></div>
+
+  <footer class="footer">prompt_version: v1.2 · sources: Companies House · Brave Search</footer>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let searchTimeout = null;
+// Track collector statuses for the status line
+const collectorStates = {};
+
+// ── DOM refs ───────────────────────────────────────────────────────────────────
+const nameInput      = document.getElementById('company-name');
+const regInput       = document.getElementById('reg-number');
+const jurisSelect    = document.getElementById('jurisdiction');
+const assessBtn      = document.getElementById('assess-btn');
+const resetBtn       = document.getElementById('reset-btn');
+const dropdown       = document.getElementById('dropdown');
+const statusLine     = document.getElementById('status-line');
+const errorBox       = document.getElementById('error-box');
+const profileSection = document.getElementById('profile-section');
+
+// ── Input validation ───────────────────────────────────────────────────────────
+function updateAssessBtn() {
+  assessBtn.disabled = !nameInput.value.trim() && !regInput.value.trim();
+}
+nameInput.addEventListener('input', () => { updateAssessBtn(); onNameInput(); });
+regInput.addEventListener('input', updateAssessBtn);
+
+// ── Disambiguation search ──────────────────────────────────────────────────────
+function onNameInput() {
+  clearTimeout(searchTimeout);
+  const name = nameInput.value.trim();
+  if (!name || name.length < 3 || regInput.value.trim()) { hideDropdown(); return; }
+  searchTimeout = setTimeout(() => fetchMatches(name), 400);
+}
+
+async function fetchMatches(name) {
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(name)}&jurisdiction=${jurisSelect.value}`);
+    const { matches } = await res.json();
+    renderDropdown(matches || []);
+  } catch { hideDropdown(); }
+}
+
+function renderDropdown(matches) {
+  if (!matches.length) { hideDropdown(); return; }
+  dropdown.innerHTML = '';
+  if (matches.length > 1) {
+    const hint = document.createElement('div');
+    hint.className = 'dropdown-hint';
+    hint.textContent = `${matches.length} matches — select one to assess`;
+    dropdown.appendChild(hint);
+  }
+  matches.forEach(m => {
+    const item = document.createElement('div');
+    item.className = 'dropdown-item';
+    item.innerHTML = `
+      <div class="dropdown-name">${escHtml(m.company_name)}</div>
+      <div class="dropdown-meta">${escHtml(m.registration_number)} · ${statusPill(m.company_status)}${m.address ? ' · ' + escHtml(m.address) : ''}</div>
+    `;
+    item.addEventListener('click', () => selectMatch(m));
+    dropdown.appendChild(item);
+  });
+  dropdown.classList.add('open');
+}
+
+function selectMatch(m) {
+  hideDropdown();
+  nameInput.value = m.company_name;
+  regInput.value = m.registration_number;
+  updateAssessBtn();
+  startAssessment({ company_name: m.company_name, registration_number: m.registration_number, jurisdiction: jurisSelect.value });
+}
+
+function hideDropdown() { dropdown.classList.remove('open'); }
+document.addEventListener('click', e => { if (!dropdown.contains(e.target) && e.target !== nameInput) hideDropdown(); });
+
+// ── Assessment ─────────────────────────────────────────────────────────────────
+assessBtn.addEventListener('click', () => {
+  hideDropdown();
+  startAssessment({
+    company_name: nameInput.value.trim() || undefined,
+    registration_number: regInput.value.trim() || undefined,
+    jurisdiction: jurisSelect.value,
+  });
+});
+
+resetBtn.addEventListener('click', reset);
+
+function reset() {
+  nameInput.value = ''; regInput.value = '';
+  updateAssessBtn();
+  statusLine.style.display = 'none';
+  statusLine.innerHTML = '';
+  profileSection.style.display = 'none';
+  profileSection.innerHTML = '';
+  errorBox.style.display = 'none';
+  resetBtn.style.display = 'none';
+  assessBtn.textContent = 'Assess Risk';
+  assessBtn.disabled = true;
+  nameInput.disabled = false; regInput.disabled = false; jurisSelect.disabled = false;
+  Object.keys(collectorStates).forEach(k => delete collectorStates[k]);
+}
+
+async function startAssessment(query) {
+  assessBtn.disabled = true;
+  assessBtn.textContent = 'Assessing…';
+  nameInput.disabled = true; regInput.disabled = true; jurisSelect.disabled = true;
+  resetBtn.style.display = 'inline-flex';
+  statusLine.style.display = 'block';
+  statusLine.innerHTML = 'Starting…';
+  profileSection.style.display = 'none';
+  profileSection.innerHTML = '';
+  errorBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/assess', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+    });
+
+    if (!res.ok || !res.body) throw new Error(`Server error: ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop() || '';
+      for (const part of parts) {
+        if (!part.startsWith('data: ')) continue;
+        try { handleEvent(JSON.parse(part.slice(6))); } catch { /* skip malformed */ }
+      }
+    }
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    assessBtn.textContent = 'Assess Risk';
+    assessBtn.disabled = false;
+    nameInput.disabled = false; regInput.disabled = false; jurisSelect.disabled = false;
+  }
+}
+
+// ── SSE event handling ─────────────────────────────────────────────────────────
+function handleEvent(event) {
+  switch (event.type) {
+    case 'collector_update': updateStatusLine(event.payload); break;
+    case 'profile_ready':    renderProfile(event.payload);    break;
+    case 'error':            showError(event.payload.message); break;
+    case 'done':             finaliseStatusLine();             break;
+  }
+}
+
+// ── Status line (simple text, no individual cards) ─────────────────────────────
+function updateStatusLine({ collector, status, error }) {
+  collectorStates[collector] = { status, error };
+  renderStatusLine();
+}
+
+function renderStatusLine() {
+  const parts = Object.entries(collectorStates).map(([name, { status, error }]) => {
+    const label = fmtCollectorName(name);
+    if (status === 'running') return `<span class="s-running">${label}: fetching…</span>`;
+    if (status === 'done')    return `<span class="s-done">${label}: ✓</span>`;
+    if (status === 'error')   return `<span class="s-error">${label}: ✗ ${escHtml(error || 'failed')}</span>`;
+    return `<span>${label}</span>`;
+  });
+  statusLine.innerHTML = parts.length
+    ? parts.join('<span style="color:var(--text-muted)"> · </span>')
+    : 'Starting…';
+}
+
+function finaliseStatusLine() {
+  // Once done, collapse to a single quiet line
+  const allDone = Object.values(collectorStates).every(s => s.status !== 'running');
+  if (allDone) {
+    const count = Object.keys(collectorStates).length;
+    statusLine.innerHTML = `<span style="color:var(--text-muted)">Data collected from ${count} source${count !== 1 ? 's' : ''}</span>`;
+  }
+}
+
+// ── Profile rendering ──────────────────────────────────────────────────────────
+function renderProfile(p) {
+  profileSection.style.display = 'block';
+  const riskColor = { low: 'var(--risk-low)', medium: 'var(--risk-medium)', high: 'var(--risk-high)', unknown: 'var(--risk-unknown)' }[p.overall_risk_level] || 'var(--risk-unknown)';
+  const riskDim   = { low: 'var(--risk-low-dim)', medium: 'var(--risk-medium-dim)', high: 'var(--risk-high-dim)', unknown: 'var(--risk-unknown-dim)' }[p.overall_risk_level] || 'var(--risk-unknown-dim)';
+  const riskIcon  = { low: '✅', medium: '⚠️', high: '🚨', unknown: '❓' }[p.overall_risk_level] || '❓';
+  const pct       = Math.round((p.completeness_score || 0) * 100);
+  const confLabel = pct >= 85 ? 'High confidence' : pct >= 60 ? 'Moderate confidence' : pct >= 35 ? 'Low confidence' : 'Very low confidence';
+
+  const directorsHtml = (p.directors || []).map(d => {
+    const active = !d.resigned_on;
+    return `
+      <div class="director-item">
+        <div class="director-name">${escHtml(d.name)}</div>
+        <div class="director-meta">
+          ${d.appointed_on ? 'Appointed ' + d.appointed_on : ''}
+          ${d.resigned_on ? ' · Resigned ' + d.resigned_on : active ? ' · <span style="color:var(--risk-low)">Active</span>' : ''}
+          ${d.country_of_residence ? ' · ' + escHtml(d.country_of_residence) : ''}
+          ${d.other_directorships_count != null ? ` · ${d.other_directorships_count} other directorship(s)` : ''}
+        </div>
+      </div>`;
+  }).join('') || '<p style="color:var(--text-muted);font-size:13px">No director data available</p>';
+
+  const signalsHtml = (p.risk_signals || []).map(s => `
+    <div class="signal-item signal-${s.severity}">
+      <div class="signal-name">${escHtml(s.signal.replace(/_/g,' '))}</div>
+      <div class="signal-detail">${escHtml(s.detail)}</div>
+    </div>`).join('') || '<p style="color:var(--text-muted);font-size:13px">No risk signals identified</p>';
+
+  const sicHtml = (p.sic_codes || []).map(c => `<span class="tag">${escHtml(c)}</span>`).join('') || '—';
+
+  profileSection.innerHTML = `
+    <!-- Risk header -->
+    <div class="risk-header">
+      <div class="risk-badge" style="background:${riskDim}; color:${riskColor}">
+        <span class="risk-badge-icon">${riskIcon}</span>
+        <span>${p.overall_risk_level.toUpperCase()}</span>
+      </div>
+      <div class="risk-title-group">
+        <div class="risk-company-name">${escHtml(p.canonical_name || 'Unknown Company')}</div>
+        <div class="risk-meta">
+          ${p.registration_number ? `#${escHtml(p.registration_number)}` : ''}
+          ${p.jurisdiction ? ' · ' + escHtml(p.jurisdiction) : ''}
+          ${p.company_status ? ' · ' + statusPill(p.company_status) : ''}
+        </div>
+        ${p.risk_summary ? `<div class="risk-summary">${escHtml(p.risk_summary)}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Completeness — plain text -->
+    <div class="completeness-text">Data completeness: ${pct}% · ${confLabel}</div>
+
+    <!-- Identity -->
+    <p class="section-title">Company Details</p>
+    <div class="profile-grid" style="margin-bottom:20px">
+      ${kv('Incorporated', p.incorporation_date)}
+      ${kv('Type', p.company_type)}
+      ${kv('Address', p.registered_address)}
+      ${kv('SIC Codes', sicHtml, true)}
+    </div>
+
+    <!-- Filing history -->
+    <p class="section-title">Filing History</p>
+    <div class="profile-grid" style="margin-bottom:20px">
+      ${kv('Total Filings', p.filing_history?.total_filings)}
+      ${kv('Last Filed', p.filing_history?.last_filed_date)}
+      ${kv('Years on Record', p.filing_history?.years_of_history)}
+      ${kv('Overdue Filings', fmtBool(p.filing_history?.has_overdue_filings))}
+    </div>
+
+    <!-- Directors -->
+    <p class="section-title">Directors (${(p.directors||[]).length})</p>
+    <div class="director-list">${directorsHtml}</div>
+
+    <!-- Risk signals -->
+    <p class="section-title">Risk Signals</p>
+    <div class="signals">${signalsHtml}</div>
+
+    <!-- Adverse media -->
+    <p class="section-title">Adverse Media</p>
+    <div class="media-summary">
+      ${p.adverse_media?.summary ? escHtml(p.adverse_media.summary) : '<span style="color:var(--text-muted)">No summary available</span>'}
+      ${p.adverse_media?.has_adverse_media ? `<br><br><strong style="color:var(--risk-high)">⚠ Adverse media detected</strong>` : ''}
+    </div>
+
+    <!-- Metadata footer -->
+    <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-muted); border-top:1px solid var(--border); padding-top:12px; flex-wrap:wrap; gap:8px">
+      <span>Sources: ${escHtml((p.data_sources_used||[]).join(', ') || '—')}</span>
+      <span>Prompt: ${escHtml(p.prompt_version||'—')} · Assessed: ${p.assessed_at ? new Date(p.assessed_at).toLocaleString() : '—'}</span>
+    </div>
+  `;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function showError(msg) {
+  errorBox.textContent = '⚠ ' + msg;
+  errorBox.style.display = 'block';
+}
+
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function kv(label, value, raw = false) {
+  const content = (value == null || value === '')
+    ? `<span class="kv-val kv-null">—</span>`
+    : raw ? `<span class="kv-val">${value}</span>` : `<span class="kv-val">${escHtml(String(value))}</span>`;
+  return `<div class="kv-pair"><span class="kv-key">${label}</span>${content}</div>`;
+}
+
+function fmtBool(v) {
+  if (v === null || v === undefined) return null;
+  return v ? 'Yes' : 'No';
+}
+
+function fmtCollectorName(name) {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function statusPill(status) {
+  const cls = status === 'active' ? 'pill-active' : status === 'dissolved' ? 'pill-dissolved' : 'pill-other';
+  return `<span class="status-pill ${cls}">${escHtml(status)}</span>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "input": {
+    "company_name": "Acme Consulting Ltd",
+    "registration_number": "12345678",
+    "jurisdiction": "GB"
+  },
+  "output": {
+    "canonical_name": "Acme Consulting Ltd",
+    "registration_number": "12345678",
+    "jurisdiction": "GB",
+    "incorporation_date": "2019-03-15",
+    "company_status": "active",
+    "company_type": "ltd",
+    "registered_address": "123 Business Road, London, EC1A 1BB",
+    "sic_codes": ["70229"],
+    "directors": [
+      {
+        "name": "SMITH, John David",
+        "appointed_on": "2019-03-15",
+        "resigned_on": null,
+        "other_directorships_count": null,
+        "country_of_residence": "England"
+      },
+      {
+        "name": "JONES, Sarah",
+        "appointed_on": "2020-06-01",
+        "resigned_on": null,
+        "other_directorships_count": null,
+        "country_of_residence": "England"
+      }
+    ],
+    "filing_history": {
+      "total_filings": 12,
+      "last_filed_date": "2024-03-14",
+      "has_overdue_filings": false,
+      "years_of_history": 5.0
+    },
+    "adverse_media": {
+      "has_adverse_media": false,
+      "scam_mentions": 0,
+      "regulatory_actions": 0,
+      "summary": "No adverse media found. Company appears in standard business directories without notable negative coverage.",
+      "sources": []
+    },
+    "risk_signals": [
+      {
+        "signal": "recently_incorporated",
+        "severity": "low",
+        "detail": "Company incorporated in 2019 — approximately 5 years of history."
+      }
+    ],
+    "overall_risk_level": "low",
+    "risk_summary": "Acme Consulting Ltd is an active UK limited company incorporated in 2019 with a consistent filing history and no adverse media signals. Risk is assessed as low.",
+    "data_sources_used": ["companies_house", "adverse_media"],
+    "completeness_score": 0.91,
+    "assessed_at": "2025-03-28T10:22:11.001Z",
+    "prompt_version": "v1.2"
+  }
+}
