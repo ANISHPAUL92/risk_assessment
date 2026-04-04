@@ -1,10 +1,7 @@
 """
 config.py — Central configuration.
-
 All constants and environment-derived settings live here.
 Nothing else should read os.getenv() directly.
-
-To change a timeout: edit it here. One place, picked up everywhere.
 """
 from __future__ import annotations
 
@@ -31,7 +28,6 @@ LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "2"))
 # ── Timeouts (seconds) ────────────────────────────────────────────────────────
 
 # Hard ceiling for the entire assessment (collectors + LLM combined).
-# Matches the product requirement of "data within 10 seconds in most cases".
 ASSESSMENT_TIMEOUT_SECS: float = float(os.getenv("ASSESSMENT_TIMEOUT_SECS", "10"))
 
 # Each data source gets this long independently before being marked as failed.

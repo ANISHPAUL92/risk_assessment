@@ -1,8 +1,5 @@
 """
 api/search.py — Company name search endpoint.
-
-Powers the disambiguation dropdown in the UI.
-Called on every debounced keystroke — must be fast and never crash.
 """
 from __future__ import annotations
 
@@ -27,12 +24,7 @@ async def search_companies(
 ) -> dict:
     """
     Returns candidate company matches for a name query.
-
-    Always returns a dict with a 'matches' list — never raises.
-    Errors are returned as {"matches": [], "error": "..."} so the UI
-    can degrade gracefully without a broken dropdown.
     """
-    # Sanitise jurisdiction — uppercase letters only, max 2 chars
     jurisdiction = "".join(c for c in jurisdiction.upper() if c.isalpha())[:2]
 
     collector = CompaniesHouseCollector()

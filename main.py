@@ -1,13 +1,5 @@
 """
 main.py — Application entry point.
-
-Responsibilities:
-  - Load environment variables
-  - Create the FastAPI app
-  - Register routers
-  - Register global error handlers
-  - Configure logging
-
 Business logic lives in api/assess.py and api/search.py.
 Constants live in config.py.
 """
@@ -29,7 +21,7 @@ from api.assess import router as assess_router
 from api.search import router as search_router
 from config import STATIC_DIR
 
-# ── Logging ────────────────────────────────────────────────────────────────────
+# Logging #
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── App ────────────────────────────────────────────────────────────────────────
+# App #
 
 app = FastAPI(title="Company Risk Assessment", version="1.0.0")
 
@@ -49,14 +41,14 @@ app.include_router(assess_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
 
 
-# ── UI route ───────────────────────────────────────────────────────────────────
+# UI route #
 
 @app.get("/")
 async def serve_ui() -> FileResponse:
     return FileResponse(str(STATIC_DIR / "index.html"))
 
 
-# ── Global error handlers ──────────────────────────────────────────────────────
+# Global error handlers #
 
 @app.exception_handler(ValidationError)
 async def validation_error_handler(request: Request, exc: ValidationError) -> JSONResponse:
@@ -87,7 +79,7 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
     )
 
 
-# ── Entrypoint ─────────────────────────────────────────────────────────────────
+# Entrypoint #
 
 if __name__ == "__main__":
     import uvicorn

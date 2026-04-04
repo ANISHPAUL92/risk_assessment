@@ -1,15 +1,7 @@
 """
 llm/structurer.py
-
 Uses Claude (via OpenRouter) to transform raw collector data into a
 validated CompanyRiskProfile.
-
-Guardrails:
-  1. Token budget cap    (LLM_MAX_TOKENS, default 1500)
-  2. temperature=0       for reproducibility
-  3. Pydantic validation on every response
-  4. Corrective prompting retry — tells the model exactly what was wrong
-  5. Typed fallback profile if all retries exhausted
 """
 from __future__ import annotations
 
@@ -36,7 +28,7 @@ from types_ import (
 
 logger = logging.getLogger(__name__)
 
-# ── Config — bump PROMPT_VERSION whenever the prompt text changes ──────────────
+# Config #
 PROMPT_VERSION = "v1.2"
 from config import ANTHROPIC_API_KEY, LLM_MODEL, LLM_MAX_TOKENS, LLM_MAX_RETRIES
 
@@ -102,7 +94,7 @@ async def structure_with_llm(
     return _build_fallback_profile(query, collected_data)
 
 
-# ── Prompt helpers ─────────────────────────────────────────────────────────────
+# Prompt helpers #
 
 def _build_system_prompt() -> str:
     return """\

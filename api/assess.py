@@ -1,17 +1,5 @@
 """
 api/assess.py — Risk assessment endpoint.
-
-Streams Server-Sent Events as the pipeline progresses:
-  started          -> assessment has begun
-  collector_update -> a data source started / finished / errored
-  profile_ready    -> final structured risk profile
-  error            -> something went wrong (stream still closes cleanly)
-  done             -> stream complete
-
-Timeout hierarchy (all configurable via config.py / .env):
-  ASSESSMENT_TIMEOUT_SECS  overall hard ceiling
-    COLLECTOR_TIMEOUT_SECS   per data source
-    LLM_TIMEOUT_SECS         Claude structuring step
 """
 from __future__ import annotations
 
@@ -52,19 +40,11 @@ async def assess_company(query: CompanyQuery) -> StreamingResponse:
 async def _assessment_stream(query: CompanyQuery) -> AsyncGenerator[str, None]:
     """
     Top-level SSE generator.
-
-    Wraps the entire pipeline in asyncio.wait_for() for a hard timeout.
-    Uses a shared queue so events still stream progressively to the browser
-    rather than buffering until the pipeline completes.
-
-    Always emits 'done' — even on timeout or error — so the browser
-    knows the stream has closed.
+    Wraps the entire pipeline in asyncio.wait_for()
     """
     def sse(event: dict) -> str:
         return f"data: {json.dumps(event)}\n\n"
 
-    # Shared queue between the pipeline producer and this consumer.
-    # None is used as a sentinel to signal the producer is finished.
     queue: asyncio.Queue[str | None] = asyncio.Queue()
 
     async def producer() -> None:
@@ -91,8 +71,6 @@ async def _assessment_stream(query: CompanyQuery) -> AsyncGenerator[str, None]:
     task = asyncio.create_task(producer())
 
     try:
-        # apply the hard ceiling to the consumer — when it times out,
-        # the producer task is cancelled and we emit the timeout error
         async for chunk in asyncio.timeout_at(
             asyncio.get_event_loop().time() + ASSESSMENT_TIMEOUT_SECS,
             consumer().__aiter__()
@@ -125,10 +103,6 @@ async def _consume_with_timeout(
 ) -> AsyncGenerator[str, None]:
     """
     Wraps an async generator with a per-item deadline using asyncio.wait_for.
-    Raises asyncio.TimeoutError if any item takes longer than timeout_secs total.
-
-    This is the reliable cross-version approach (Python 3.9+) vs asyncio.timeout()
-    which requires 3.11+.
     """
     start = asyncio.get_event_loop().time()
 
@@ -147,7 +121,7 @@ async def _consume_with_timeout(
             return
 
 
-# ── Pipeline ───────────────────────────────────────────────────────────────────
+# Pipeline #
 
 async def _run_pipeline(
     query: CompanyQuery,
@@ -155,11 +129,6 @@ async def _run_pipeline(
 ) -> AsyncGenerator[str, None]:
     """
     Core pipeline — separated from all timeout and error handling.
-
-    1. Fan out all relevant collectors concurrently
-    2. Yield a collector_update event as each one completes
-    3. Send collected data to Claude for structuring
-    4. Yield the final risk profile
     """
     collected: list[RawCollectorData] = []
     collectors = get_collectors_for_jurisdiction(query.jurisdiction)
@@ -171,7 +140,7 @@ async def _run_pipeline(
         })
         return
 
-    # ── Fan out collectors ─────────────────────────────────────────────────────
+    # Fan out collectors #
     event_queue: asyncio.Queue[CollectorUpdate | None] = asyncio.Queue()
 
     async def run_one(collector) -> None:
@@ -214,7 +183,7 @@ async def _run_pipeline(
             break
         yield sse({"type": "collector_update", "payload": update.model_dump()})
 
-    # ── LLM structuring ────────────────────────────────────────────────────────
+    # LLM structuring #
     if not collected:
         yield sse({
             "type": "error",

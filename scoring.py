@@ -1,6 +1,5 @@
 """
 scoring.py — Pure functions for result quality evaluation.
-No side effects, no I/O — straightforward to unit test.
 """
 from __future__ import annotations
 
@@ -10,8 +9,6 @@ from typing import Any
 def calculate_completeness(profile: dict[str, Any]) -> float:
     """
     Proportion of key risk fields that are non-null/non-empty.
-    Weighted by importance to the risk decision.
-    Returns float in [0.0, 1.0], rounded to 2dp.
     """
     checks: list[tuple[Any, int]] = [
         (profile.get("canonical_name"), 2),
@@ -54,7 +51,7 @@ def risk_level_colour(level: str) -> str:
     }.get(level, "#6b7280")
 
 
-# ── Internal helpers ───────────────────────────────────────────────────────────
+# Internal helpers #
 
 def _nested(d: dict, *keys: str) -> Any:
     current = d

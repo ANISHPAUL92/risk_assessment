@@ -29,7 +29,6 @@ class CompaniesHouseCollector(DataCollector):
             logger.warning("[CompaniesHouse] No API key — using mock data")
 
     async def collect(self, query: CompanyQuery) -> RawCollectorData:
-        # Always check for demo company first — regardless of API key presence
         if query.company_name and query.company_name.strip().lower() == _DEMO_NAME:
             return self._demo_data(query)
 
@@ -47,7 +46,7 @@ class CompaniesHouseCollector(DataCollector):
                 return await self._fetch_by_number(client, query.registration_number)
             return await self._fetch_by_name(client, query.company_name or "")
 
-    # ── Real API helpers ───────────────────────────────────────────────────────
+    # Real API helpers #
 
     async def _fetch_by_number(self, client: httpx.AsyncClient, number: str) -> RawCollectorData:
         import asyncio

@@ -1,8 +1,5 @@
 """
 types_.py — All shared Pydantic models.
-
-Lives at the root of risk_assessment/ so every module can import it simply:
-    from types_ import CompanyQuery, CompanyRiskProfile, ...
 """
 from __future__ import annotations
 
@@ -13,7 +10,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 
-# ── Input ──────────────────────────────────────────────────────────────────────
+# Input #
 
 class CompanyQuery(BaseModel):
     company_name: str | None = None
@@ -27,7 +24,7 @@ class CompanyQuery(BaseModel):
         return self
 
 
-# ── Risk profile sub-models ────────────────────────────────────────────────────
+# Risk profile sub-models #
 
 class RiskLevel(str, Enum):
     LOW = "low"
@@ -95,7 +92,7 @@ class CompanyRiskProfile(BaseModel):
     prompt_version: str = "unknown"
 
 
-# ── Streaming event types ──────────────────────────────────────────────────────
+# Streaming event types #
 
 class CollectorStatus(str, Enum):
     PENDING = "pending"
