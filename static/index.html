@@ -421,7 +421,8 @@ function renderStatusLine() {
     const label = fmtCollectorName(name);
     if (status === 'running') return `<span class="s-running">${label}: fetching…</span>`;
     if (status === 'done')    return `<span class="s-done">${label}: ✓</span>`;
-    if (status === 'error')   return `<span class="s-error">${label}: ✗ ${escHtml(error || 'failed')}</span>`;
+    if (status === 'no_key')  return `<span style="color:var(--text-muted)">${label}: no API key</span>`;
+    if (status === 'error') return `<span class="s-error">${label}: ✗ ${formatError(error)}</span>`;
     return `<span>${label}</span>`;
   });
   statusLine.innerHTML = parts.length
@@ -532,6 +533,22 @@ function renderProfile(p) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+function formatError(err) {
+  if (!err) return 'failed';
+
+  const msg = String(err);
+
+  // Clean common noisy errors
+  if (msg.includes('401')) return 'Unauthorized (API key issue)';
+  if (msg.includes('404')) return 'Not found';
+  if (msg.includes('403')) return 'Forbidden';
+  if (msg.includes('Failed to fetch')) return 'Network error';
+  if (msg.includes('timeout')) return 'Request timed out';
+
+  // Remove URLs if present
+  return escHtml(msg.replace(/https?:\/\/\S+/g, '').trim());
+}
+
 function showError(msg) {
   errorBox.textContent = '⚠ ' + msg;
   errorBox.style.display = 'block';

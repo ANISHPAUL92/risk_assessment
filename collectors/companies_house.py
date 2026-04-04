@@ -14,20 +14,30 @@ from types_ import CompanyMatch, CompanyQuery, RawCollectorData
 logger = logging.getLogger(__name__)
 BASE_URL = "https://api.company-information.service.gov.uk"
 
+# The demo company that always returns rich mock data in development
+_DEMO_NAME = "cartoon network ltd"
+
 
 class CompaniesHouseCollector(DataCollector):
     name = "companies_house"
     supported_jurisdictions = ["GB"]
 
     def __init__(self) -> None:
-        self._api_key = os.getenv("COMPANIES_HOUSE_API_KEY") or None
+        raw_key = os.getenv("COMPANIES_HOUSE_API_KEY", "").strip()
+        self._api_key = raw_key if raw_key else None
         if not self._api_key:
             logger.warning("[CompaniesHouse] No API key — using mock data")
 
     async def collect(self, query: CompanyQuery) -> RawCollectorData:
-        if not self._api_key:
-            return self._mock_data(query)
+        # Always check for demo company first — regardless of API key presence
+        if query.company_name and query.company_name.strip().lower() == _DEMO_NAME:
+            return self._demo_data(query)
 
+        # No real API key — return null for everything else
+        if not self._api_key:
+            return self._no_data(query)
+
+        # Real API key present — fetch live data
         async with httpx.AsyncClient(
             base_url=BASE_URL,
             headers=self._auth_headers(),
@@ -36,6 +46,8 @@ class CompaniesHouseCollector(DataCollector):
             if query.registration_number:
                 return await self._fetch_by_number(client, query.registration_number)
             return await self._fetch_by_name(client, query.company_name or "")
+
+    # ── Real API helpers ───────────────────────────────────────────────────────
 
     async def _fetch_by_number(self, client: httpx.AsyncClient, number: str) -> RawCollectorData:
         import asyncio
@@ -75,91 +87,67 @@ class CompaniesHouseCollector(DataCollector):
         encoded = base64.b64encode(f"{self._api_key}:".encode()).decode()
         return {"Authorization": f"Basic {encoded}"}
 
-    def _mock_data(self, query: CompanyQuery) -> RawCollectorData:
-        # Registration number only — we cannot fabricate a real company from a number
-        # we've never seen. Return empty data so the LLM reports no info found.
-        if query.registration_number and not query.company_name:
-            logger.info(
-                "[CompaniesHouse] Mock mode: cannot look up %s without a real API key.",
-                query.registration_number,
-            )
-            return RawCollectorData(
-                source=self.name,
-                raw={
-                    "mock_notice": (
-                        "No Companies House API key configured. "
-                        "Cannot look up company by registration number without a live API call. "
-                        "No company data is available for this query."
-                    ),
-                    "queried_registration_number": query.registration_number,
-                    "profile": None,
-                    "officers": None,
-                    "filings": None,
-                },
-            )
-
-        # Name search — only return rich mock data for the designated demo company.
-        # For everything else return null so the LLM does not treat fake data as real.
-        DEMO_NAME = "cartoon network ltd"
-        if query.company_name and query.company_name.strip().lower() == DEMO_NAME:
-            logger.info("[CompaniesHouse] Mock mode: returning demo profile for '%s'.", query.company_name)
-            return RawCollectorData(
-                source=self.name,
-                raw={
-                    "mock_notice": "Demo data for development — not a real Companies House record.",
-                    "profile": {
-                        "company_name": query.company_name,
-                        "company_number": "00000001",
-                        "company_status": "active",
-                        "type": "ltd",
-                        "date_of_creation": "2015-06-01",
-                        "registered_office_address": {
-                            "address_line_1": "1 Media House",
-                            "locality": "London",
-                            "postal_code": "W1T 3JH",
-                            "country": "England",
-                        },
-                        "sic_codes": ["59113"],
-                        "accounts": {
-                            "next_due": "2025-12-31",
-                            "last_accounts": {"made_up_to": "2023-12-31"},
-                        },
-                        "confirmation_statement": {
-                            "next_due": "2025-06-01",
-                            "last_made_up_to": "2024-06-01",
-                            "overdue": False,
-                        },
+    def _demo_data(self, query: CompanyQuery) -> RawCollectorData:
+        """Rich demo profile for Cartoon Network Ltd — used in development."""
+        logger.info("[CompaniesHouse] Returning demo profile for '%s'.", query.company_name)
+        return RawCollectorData(
+            source=self.name,
+            raw={
+                "mock_notice": "Demo data for development — not a real Companies House record.",
+                "profile": {
+                    "company_name": query.company_name,
+                    "company_number": query.registration_number or "00000001",
+                    "company_status": "active",
+                    "type": "ltd",
+                    "date_of_creation": "2015-06-01",
+                    "registered_office_address": {
+                        "address_line_1": "1 Media House",
+                        "locality": "London",
+                        "postal_code": "W1T 3JH",
+                        "country": "England",
                     },
-                    "officers": {
-                        "items": [],
-                        "mock_notice": "Director information not available in demo mode.",
+                    "sic_codes": ["59113"],
+                    "accounts": {
+                        "next_due": "2025-12-31",
+                        "last_accounts": {"made_up_to": "2023-12-31"},
                     },
-                    "filings": {
-                        "total_count": 18,
-                        "items": [
-                            {"date": "2024-06-01", "description": "Confirmation statement", "category": "confirmation-statement"},
-                            {"date": "2024-02-10", "description": "Total exemption full accounts", "category": "accounts"},
-                            {"date": "2023-06-01", "description": "Confirmation statement", "category": "confirmation-statement"},
-                        ],
+                    "confirmation_statement": {
+                        "next_due": "2025-06-01",
+                        "last_made_up_to": "2024-06-01",
+                        "overdue": False,
                     },
                 },
-            )
+                "officers": {
+                    "items": [],
+                    "mock_notice": "Director information not available in demo mode.",
+                },
+                "filings": {
+                    "total_count": 18,
+                    "items": [
+                        {"date": "2024-06-01", "description": "Confirmation statement", "category": "confirmation-statement"},
+                        {"date": "2024-02-10", "description": "Total exemption full accounts", "category": "accounts"},
+                        {"date": "2023-06-01", "description": "Confirmation statement", "category": "confirmation-statement"},
+                    ],
+                },
+            },
+        )
 
-        # Any other name without an API key — return null so the LLM is honest
-        # that it has no verified company data to work with.
+    def _no_data(self, query: CompanyQuery) -> RawCollectorData:
+        """Returned for any company we cannot look up without a real API key."""
         logger.info(
-            "[CompaniesHouse] Mock mode: no real data available for '%s' without an API key.",
-            query.company_name,
+            "[CompaniesHouse] No API key — returning null data for '%s' / '%s'.",
+            query.company_name, query.registration_number,
         )
         return RawCollectorData(
             source=self.name,
             raw={
+                "no_key": True,
                 "mock_notice": (
                     "No Companies House API key configured. "
-                    "Cannot look up company details without a live API call. "
                     "No address, filing, or director data is available."
                 ),
-                "queried_company_name": query.company_name,
+                "queried_name": query.company_name,
+                "queried_registration_number": query.registration_number,
                 "profile": None,
                 "officers": None,
                 "filings": None,

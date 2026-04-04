@@ -18,14 +18,16 @@ class AdverseMediaCollector(DataCollector):
     supported_jurisdictions = ["*"]
 
     def __init__(self) -> None:
-        self._api_key = os.getenv("BRAVE_SEARCH_API_KEY") or None
+        raw_key = os.getenv("BRAVE_SEARCH_API_KEY", "").strip()
+        self._api_key = raw_key if raw_key else None
         if not self._api_key:
             logger.warning("[AdverseMedia] No Brave API key — using mock data")
 
     async def collect(self, query: CompanyQuery) -> RawCollectorData:
         company_ref = query.company_name or f"company {query.registration_number}"
+
         if not self._api_key:
-            return self._mock_data(company_ref)
+            return self._no_key_data(company_ref)
 
         queries = [
             f'"{company_ref}" scam fraud',
@@ -65,15 +67,14 @@ class AdverseMediaCollector(DataCollector):
         res.raise_for_status()
         return res.json().get("web", {}).get("results", [])
 
-    def _mock_data(self, company_name: str) -> RawCollectorData:
+    def _no_key_data(self, company_name: str) -> RawCollectorData:
+        """Returned when no Brave API key is configured."""
         return RawCollectorData(
             source=self.name,
             raw={
-                "queries": [f'"{company_name}" scam fraud'],
-                "results": [{
-                    "title": "No significant adverse media found",
-                    "url": "https://example.com",
-                    "description": f"{company_name} appears in standard business directories with no notable negative coverage.",
-                }],
+                "no_key": True,
+                "mock_notice": "No Brave Search API key configured. Adverse media search unavailable.",
+                "queries": [],
+                "results": [],
             },
         )

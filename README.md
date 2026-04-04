@@ -1,26 +1,24 @@
-# Company Risk Assessment
+# 1. Enter the project directory
+cd risk_assessment
 
-A system that gathers and structures information about companies to risk-assess them as payment beneficiaries, built for Tunic Pay.
+# 2. Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate       # macOS / Linux
+# .venv\Scripts\activate        # Windows
 
-## Quick Start
-
-```bash
-# 1. Clone and enter the project
-cd risk-assessment
-
-# 2. Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configure environment
+# 4. Configure environment variables
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
-# Optionally add COMPANIES_HOUSE_API_KEY and BRAVE_SEARCH_API_KEY
-# (system works with mock data if those are absent)
+# Edit .env — at minimum set ANTHROPIC_API_KEY (see API Keys section below)
 
-# 4. Run the server
+# 5. Start the server
 python main.py
-# or: uvicorn main:app --reload --port 8000
 
-# 5. Open the UI
+# 6. Open the UI
 open http://localhost:8000
-```
+
+# 7. To run the Tests
+cd risk_assessment
+python python main  

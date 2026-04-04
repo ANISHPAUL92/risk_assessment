@@ -44,10 +44,10 @@ MODEL = LLM_MODEL
 MAX_TOKENS = LLM_MAX_TOKENS
 MAX_RETRIES = LLM_MAX_RETRIES
 
-# OpenRouter uses the Anthropic SDK but with a different base URL
 _client = anthropic.Anthropic(
     api_key=ANTHROPIC_API_KEY,
     base_url="https://openrouter.ai/api",
+    max_retries=0,
 )
 
 
@@ -67,6 +67,7 @@ async def structure_with_llm(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
                 temperature=0,
+                top_p=1,
                 system=system_prompt,
                 messages=messages,
             )
