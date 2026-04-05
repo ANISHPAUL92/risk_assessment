@@ -29,4 +29,4 @@ Without keys, only Cartoon Network Ltd returns a full demo profile — any other
 
 # 8. To run the Tests
 cd risk_assessment
-python python main  
+python -m pytest tests/ -v
